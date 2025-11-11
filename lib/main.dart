@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flame/game.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'ui/main_menu.dart';
-import 'ui/resume_screen.dart';
-import 'ui/settings_screen.dart';
 import 'game/runner_game.dart';
 import 'ui/runner_overlays.dart';
 import 'firebase_options.dart';
+import 'ui/app_theme.dart';
+import 'ui/main_menu.dart';
+import 'ui/resume_screen.dart';
+import 'ui/settings_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   if (Firebase.apps.isEmpty) {
-    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
   } else {
     Firebase.app();
   }
@@ -26,10 +29,10 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Runner Game',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme(),
+      darkTheme: AppTheme.darkTheme(),
+      themeMode: ThemeMode.dark,
       routes: {
         '/': (context) => const MainMenuScreen(),
         '/play': (context) {

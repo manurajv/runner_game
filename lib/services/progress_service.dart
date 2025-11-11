@@ -1,4 +1,7 @@
 import 'dart:collection';
+
+import 'package:flutter/foundation.dart';
+
 import '../constants/unlock_thresholds.dart';
 
 class ProgressService {
@@ -6,16 +9,19 @@ class ProgressService {
   static final ProgressService instance = ProgressService._();
 
   int _highScore = 0;
+  final ValueNotifier<int> highScoreNotifier = ValueNotifier<int>(0);
   final Map<UnlockLevel, bool> _unlocks = {
     for (final level in UnlockLevel.values) level: false,
   };
 
   int get highScore => _highScore;
-  UnmodifiableMapView<UnlockLevel, bool> get currentUnlocks => UnmodifiableMapView(_unlocks);
+  UnmodifiableMapView<UnlockLevel, bool> get currentUnlocks =>
+      UnmodifiableMapView(_unlocks);
 
   void updateScore(int score) {
     if (score > _highScore) {
       _highScore = score;
+      highScoreNotifier.value = _highScore;
     }
     _recomputeUnlocks();
   }
@@ -28,6 +34,7 @@ class ProgressService {
 
   void resetProgress() {
     _highScore = 0;
+    highScoreNotifier.value = _highScore;
     for (final level in UnlockLevel.values) {
       _unlocks[level] = false;
     }
@@ -38,5 +45,3 @@ class ProgressService {
   // Future<void> loadFromCloud();
   // Future<void> saveToCloud();
 }
-
-

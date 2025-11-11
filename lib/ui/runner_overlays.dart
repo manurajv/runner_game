@@ -1,6 +1,10 @@
 import 'dart:async';
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
+
 import '../game/runner_game.dart';
+import 'app_theme.dart';
 
 class RunnerStartOverlay extends StatefulWidget {
   final RunnerGame game;
@@ -41,25 +45,44 @@ class _RunnerStartOverlayState extends State<RunnerStartOverlay> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: Colors.black54,
+    return DecoratedBox(
+      decoration: const BoxDecoration(gradient: _overlayBackground),
       child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Runner Game', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            const Text('Swipe lanes with buttons. Avoid obstacles. Get points!', style: TextStyle(color: Colors.white70)),
-            const SizedBox(height: 16),
-            if (!_counting)
-              ElevatedButton.icon(
-                onPressed: _go,
-                icon: const Icon(Icons.play_arrow_rounded),
-                label: const Text('Start'),
-              )
-            else
-              Text('$_sec', style: const TextStyle(color: Colors.white, fontSize: 56, fontWeight: FontWeight.w800)),
-          ],
+        child: _OverlayPanel(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Runner Game',
+                style: Theme.of(
+                  context,
+                ).textTheme.headlineSmall?.copyWith(color: Colors.white),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Swipe between lanes, dodge hazards, chase a higher score.',
+                textAlign: TextAlign.center,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(color: Colors.white70),
+              ),
+              const SizedBox(height: 24),
+              if (!_counting)
+                FilledButton.icon(
+                  onPressed: _go,
+                  icon: const Icon(Icons.play_arrow_rounded),
+                  label: const Text('Start Run'),
+                )
+              else
+                Text(
+                  '$_sec',
+                  style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -81,7 +104,6 @@ class _RunnerHudOverlayState extends State<RunnerHudOverlay> {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        // Full-screen swipe to change lanes
         Positioned.fill(
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
@@ -99,15 +121,28 @@ class _RunnerHudOverlayState extends State<RunnerHudOverlay> {
         SafeArea(
           child: Align(
             alignment: Alignment.topCenter,
-            child: DecoratedBox(
-              decoration: BoxDecoration(color: Colors.black45, borderRadius: BorderRadius.circular(12)),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
-                child: ValueListenableBuilder<double>(
-                  valueListenable: game.scoreNotifier,
-                  builder: (_, v, __) => Text(
-                    'Score: ${v.toStringAsFixed(0)}',
-                    style: const TextStyle(color: Colors.white),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(18),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 8,
+                    horizontal: 18,
+                  ),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(18),
+                    color: Colors.black.withOpacity(0.35),
+                    border: Border.all(color: Colors.white.withOpacity(0.12)),
+                  ),
+                  child: ValueListenableBuilder<double>(
+                    valueListenable: game.scoreNotifier,
+                    builder: (_, v, __) => Text(
+                      'Score ${v.toStringAsFixed(0)}',
+                      style: Theme.of(
+                        context,
+                      ).textTheme.titleMedium?.copyWith(color: Colors.white),
+                    ),
                   ),
                 ),
               ),
@@ -117,15 +152,21 @@ class _RunnerHudOverlayState extends State<RunnerHudOverlay> {
         Align(
           alignment: Alignment.bottomLeft,
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: _circleButton(icon: Icons.arrow_left_rounded, onTap: game.moveLeft),
+            padding: const EdgeInsets.all(20.0),
+            child: _circleButton(
+              icon: Icons.arrow_left_rounded,
+              onTap: game.moveLeft,
+            ),
           ),
         ),
         Align(
           alignment: Alignment.bottomRight,
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: _circleButton(icon: Icons.arrow_right_rounded, onTap: game.moveRight),
+            padding: const EdgeInsets.all(20.0),
+            child: _circleButton(
+              icon: Icons.arrow_right_rounded,
+              onTap: game.moveRight,
+            ),
           ),
         ),
       ],
@@ -136,10 +177,20 @@ class _RunnerHudOverlayState extends State<RunnerHudOverlay> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 70,
-        height: 70,
-        decoration: const BoxDecoration(color: Colors.white70, shape: BoxShape.circle),
-        child: Icon(icon, size: 40, color: const Color(0xFF2E1A6F)),
+        width: 74,
+        height: 74,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: AppGradients.highlight,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.35),
+              blurRadius: 24,
+              offset: const Offset(0, 12),
+            ),
+          ],
+        ),
+        child: Icon(icon, size: 42, color: Colors.white),
       ),
     );
   }
@@ -151,35 +202,56 @@ class RunnerGameOverOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: Colors.black54,
+    return DecoratedBox(
+      decoration: const BoxDecoration(gradient: _overlayBackground),
       child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Game Over', style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w800)),
-            const SizedBox(height: 8),
-            ValueListenableBuilder<double>(
-              valueListenable: game.scoreNotifier,
-              builder: (_, v, __) => Text('Score: ${v.toStringAsFixed(0)}', style: const TextStyle(color: Colors.white70)),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ElevatedButton(onPressed: game.restart, child: const Text('Retry')),
-                const SizedBox(width: 12),
-                ElevatedButton(
-                  onPressed: () {
-                    game.overlays.remove('runner_gameover');
-                    game.resumeGame();
-                    Navigator.of(context).popUntil((r) => r.isFirst);
-                  },
-                  child: const Text('Main Menu'),
+        child: _OverlayPanel(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Run Complete',
+                style: Theme.of(
+                  context,
+                ).textTheme.headlineSmall?.copyWith(color: Colors.white),
+              ),
+              const SizedBox(height: 8),
+              ValueListenableBuilder<double>(
+                valueListenable: game.scoreNotifier,
+                builder: (_, v, __) => Text(
+                  'Final score: ${v.toStringAsFixed(0)}',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: Colors.white70),
                 ),
-              ],
-            )
-          ],
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  FilledButton.icon(
+                    onPressed: game.restart,
+                    icon: const Icon(Icons.refresh_rounded),
+                    label: const Text('Try Again'),
+                  ),
+                  const SizedBox(width: 12),
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      side: BorderSide(color: Colors.white.withOpacity(0.35)),
+                    ),
+                    onPressed: () {
+                      game.overlays.remove('runner_gameover');
+                      game.resumeGame();
+                      Navigator.of(context).popUntil((r) => r.isFirst);
+                    },
+                    icon: const Icon(Icons.home_rounded),
+                    label: const Text('Main Menu'),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -192,40 +264,47 @@ class RunnerPauseOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: Colors.black54,
+    return DecoratedBox(
+      decoration: const BoxDecoration(gradient: _overlayBackground),
       child: Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32.0),
+        child: _OverlayPanel(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
+              Text(
                 'Paused',
-                style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w700),
+                style: Theme.of(
+                  context,
+                ).textTheme.headlineSmall?.copyWith(color: Colors.white),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               ValueListenableBuilder<double>(
                 valueListenable: game.scoreNotifier,
                 builder: (_, v, __) => Text(
-                  'Score: ${v.toStringAsFixed(0)}',
-                  style: const TextStyle(color: Colors.white70),
+                  'Current score: ${v.toStringAsFixed(0)}',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: Colors.white70),
                 ),
               ),
               const SizedBox(height: 24),
               FilledButton.icon(
                 onPressed: game.beginResumeCountdown,
                 icon: const Icon(Icons.play_arrow_rounded),
-                label: const Text('Resume'),
+                label: const Text('Resume run'),
               ),
               const SizedBox(height: 12),
               OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  side: BorderSide(color: Colors.white.withOpacity(0.35)),
+                ),
                 onPressed: () {
                   game.resumeGame();
                   Navigator.of(context).popUntil((r) => r.isFirst);
                 },
                 icon: const Icon(Icons.home_rounded),
-                label: const Text('Main Menu'),
+                label: const Text('Main menu'),
               ),
             ],
           ),
@@ -275,22 +354,69 @@ class _RunnerResumeOverlayState extends State<RunnerResumeOverlay> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: Colors.black54,
+    return DecoratedBox(
+      decoration: const BoxDecoration(gradient: _overlayBackground),
       child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Resuming', style: TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w700)),
-            const SizedBox(height: 12),
-            Text('$_sec', style: const TextStyle(color: Colors.white, fontSize: 60, fontWeight: FontWeight.w800)),
-            const SizedBox(height: 12),
-            const Text('Get ready...', style: TextStyle(color: Colors.white70)),
-          ],
+        child: _OverlayPanel(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Get ready',
+                style: Theme.of(
+                  context,
+                ).textTheme.headlineSmall?.copyWith(color: Colors.white),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                '$_sec',
+                style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Resume in a moment...',
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(color: Colors.white70),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
+class _OverlayPanel extends StatelessWidget {
+  const _OverlayPanel({required this.child});
 
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(32),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(32),
+            border: Border.all(color: Colors.white.withOpacity(0.14)),
+            color: Colors.white.withOpacity(0.08),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 28),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
+const LinearGradient _overlayBackground = LinearGradient(
+  begin: Alignment.topLeft,
+  end: Alignment.bottomRight,
+  colors: [Color(0xCC0A0F1F), Color(0xCC1C1F3A)],
+);
