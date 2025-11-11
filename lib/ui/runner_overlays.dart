@@ -214,7 +214,7 @@ class RunnerPauseOverlay extends StatelessWidget {
               ),
               const SizedBox(height: 24),
               FilledButton.icon(
-                onPressed: game.resumeGame,
+                onPressed: game.beginResumeCountdown,
                 icon: const Icon(Icons.play_arrow_rounded),
                 label: const Text('Resume'),
               ),
@@ -229,6 +229,64 @@ class RunnerPauseOverlay extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class RunnerResumeOverlay extends StatefulWidget {
+  final RunnerGame game;
+  const RunnerResumeOverlay({super.key, required this.game});
+
+  @override
+  State<RunnerResumeOverlay> createState() => _RunnerResumeOverlayState();
+}
+
+class _RunnerResumeOverlayState extends State<RunnerResumeOverlay> {
+  int _sec = 3;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _startCountdown();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _startCountdown() {
+    _timer?.cancel();
+    _sec = 3;
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) return;
+      if (_sec <= 1) {
+        timer.cancel();
+        widget.game.completeResumeCountdown();
+      } else {
+        setState(() => _sec -= 1);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Colors.black54,
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Resuming', style: TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 12),
+            Text('$_sec', style: const TextStyle(color: Colors.white, fontSize: 60, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 12),
+            const Text('Get ready...', style: TextStyle(color: Colors.white70)),
+          ],
         ),
       ),
     );

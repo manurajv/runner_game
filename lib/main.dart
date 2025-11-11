@@ -33,6 +33,7 @@ class MyApp extends StatelessWidget {
               'runner_hud': (context, game) => RunnerHudOverlay(game: game as RunnerGame),
               'runner_gameover': (context, game) => RunnerGameOverOverlay(game: game as RunnerGame),
               'runner_pause': (context, game) => RunnerPauseOverlay(game: game as RunnerGame),
+              'runner_resume': (context, game) => RunnerResumeOverlay(game: game as RunnerGame),
             },
             initialActiveOverlays: const ['runner_start'],
           );
