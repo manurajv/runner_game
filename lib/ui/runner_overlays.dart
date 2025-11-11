@@ -169,6 +169,39 @@ class _RunnerHudOverlayState extends State<RunnerHudOverlay> {
             ),
           ),
         ),
+        SafeArea(
+          child: Align(
+            alignment: Alignment.topRight,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 16, right: 16),
+              child: ValueListenableBuilder<List<AchievementUnlockEvent>>(
+                valueListenable: game.unlockQueueNotifier,
+                builder: (_, events, __) {
+                  if (events.isEmpty) {
+                    return const SizedBox.shrink();
+                  }
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: events
+                        .map(
+                          (event) => Padding(
+                            key: ValueKey(event.id),
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: _AchievementToast(
+                              event: event,
+                              onDismiss: () =>
+                                  game.dismissAchievementToast(event.id),
+                            ),
+                          ),
+                        )
+                        .toList(),
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -383,6 +416,130 @@ class _RunnerResumeOverlayState extends State<RunnerResumeOverlay> {
                 ).textTheme.bodyMedium?.copyWith(color: Colors.white70),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AchievementToast extends StatefulWidget {
+  const _AchievementToast({required this.event, required this.onDismiss});
+
+  final AchievementUnlockEvent event;
+  final VoidCallback onDismiss;
+
+  @override
+  State<_AchievementToast> createState() => _AchievementToastState();
+}
+
+class _AchievementToastState extends State<_AchievementToast> {
+  static const _slideDuration = Duration(milliseconds: 260);
+  static const _fadeDuration = Duration(milliseconds: 240);
+  static const _visibleDuration = Duration(milliseconds: 2100);
+
+  bool _visible = false;
+  Timer? _hideTimer;
+  Timer? _dismissTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    Future<void>.delayed(const Duration(milliseconds: 20), () {
+      if (mounted) {
+        setState(() => _visible = true);
+      }
+    });
+    _hideTimer = Timer(_visibleDuration, _startDismiss);
+  }
+
+  void _startDismiss() {
+    if (!mounted) return;
+    setState(() => _visible = false);
+    _dismissTimer = Timer(_slideDuration, widget.onDismiss);
+  }
+
+  @override
+  void dispose() {
+    _hideTimer?.cancel();
+    _dismissTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = widget.event.color;
+    final title = widget.event.title;
+    final subtitle = 'Reached ${widget.event.threshold} pts';
+    return AnimatedSlide(
+      duration: _slideDuration,
+      curve: Curves.easeOut,
+      offset: _visible ? Offset.zero : const Offset(0.2, 0),
+      child: AnimatedOpacity(
+        duration: _fadeDuration,
+        opacity: _visible ? 1 : 0,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [accent.withOpacity(0.92), accent.withOpacity(0.65)],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: [
+              BoxShadow(
+                color: accent.withOpacity(0.35),
+                blurRadius: 12,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withOpacity(0.15),
+                  ),
+                  child: const Icon(
+                    Icons.workspace_premium_rounded,
+                    color: Colors.white,
+                    size: 26,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Resume unlock!',
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Text(
+                      title,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      subtitle,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: Colors.white.withOpacity(0.9),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),

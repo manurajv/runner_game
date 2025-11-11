@@ -1,114 +1,121 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flame/camera.dart';
 import 'package:flame/components.dart';
 import 'package:flame/effects.dart';
 import 'package:flame/game.dart';
+import 'package:flame/particles.dart';
 import 'package:flutter/material.dart';
+import '../constants/unlock_metadata.dart';
+import '../constants/unlock_thresholds.dart';
 import '../services/progress_service.dart';
+import '../services/game_audio_service.dart';
 
 class RunnerSpriteFactory {
   static final Map<String, Future<Sprite>> _cache = {};
 
   static Future<Sprite> player() => _memo(
-        'player',
-        () => _roundedRectSprite(
-          size: Vector2.all(160),
-          gradient: const [Color(0xFF5EEAD4), Color(0xFF0EA5E9)],
-          borderColor: const Color(0xAAFFFFFF),
-          borderWidth: 6,
-          cornerRadius: 48,
-          glowColor: const Color(0x6638BDF8),
-          glowSigma: 16,
-          highlightOpacity: 0.18,
-        ),
-      );
+    'player',
+    () => _roundedRectSprite(
+      size: Vector2.all(160),
+      gradient: const [Color(0xFF5EEAD4), Color(0xFF0EA5E9)],
+      borderColor: const Color(0xAAFFFFFF),
+      borderWidth: 6,
+      cornerRadius: 48,
+      glowColor: const Color(0x6638BDF8),
+      glowSigma: 16,
+      highlightOpacity: 0.18,
+    ),
+  );
 
   static Future<Sprite> obstacle() => _memo(
-        'obstacle',
-        () => _roundedRectSprite(
-          size: Vector2.all(150),
-          gradient: const [Color(0xFFFF6B6B), Color(0xFFEF4444)],
-          borderColor: const Color(0xCCFFFFFF),
-          borderWidth: 4,
-          cornerRadius: 40,
-          glowColor: const Color(0x55EF4444),
-          glowSigma: 14,
-          highlightOpacity: 0.12,
-          stripeOpacity: 0.16,
-        ),
-      );
+    'obstacle',
+    () => _roundedRectSprite(
+      size: Vector2.all(150),
+      gradient: const [Color(0xFFFF6B6B), Color(0xFFEF4444)],
+      borderColor: const Color(0xCCFFFFFF),
+      borderWidth: 4,
+      cornerRadius: 40,
+      glowColor: const Color(0x55EF4444),
+      glowSigma: 14,
+      highlightOpacity: 0.12,
+      stripeOpacity: 0.16,
+    ),
+  );
 
   static Future<Sprite> coin() => _memo(
-        'coin',
-        () => _circleSprite(
-          diameter: 140,
-          gradient: const [Color(0xFFFFF59D), Color(0xFFF59E0B)],
-          borderColor: const Color(0xFFFFE082),
-          borderWidth: 6,
-          glowColor: const Color(0x80FCD34D),
-          glowSigma: 18,
-          highlightOpacity: 0.25,
-          decorator: (canvas, rect) {
-            final starPaint = Paint()
-              ..shader = ui.Gradient.linear(
-                rect.topCenter,
-                rect.bottomCenter,
-                [
-                  Colors.white.withOpacity(0.65),
-                  Colors.white.withOpacity(0.0),
-                ],
-              );
-            final starPath = Path()
-              ..moveTo(rect.center.dx, rect.top + rect.height * 0.15)
-              ..lineTo(rect.center.dx + rect.width * 0.07, rect.center.dy)
-              ..lineTo(rect.center.dx, rect.center.dy + rect.height * 0.1)
-              ..lineTo(rect.center.dx - rect.width * 0.07, rect.center.dy)
-              ..close();
-            canvas.drawPath(starPath, starPaint);
-          },
-        ),
-      );
+    'coin',
+    () => _circleSprite(
+      diameter: 140,
+      gradient: const [Color(0xFFFFF59D), Color(0xFFF59E0B)],
+      borderColor: const Color(0xFFFFE082),
+      borderWidth: 6,
+      glowColor: const Color(0x80FCD34D),
+      glowSigma: 18,
+      highlightOpacity: 0.25,
+      decorator: (canvas, rect) {
+        final starPaint = Paint()
+          ..shader = ui.Gradient.linear(rect.topCenter, rect.bottomCenter, [
+            Colors.white.withOpacity(0.65),
+            Colors.white.withOpacity(0.0),
+          ]);
+        final starPath = Path()
+          ..moveTo(rect.center.dx, rect.top + rect.height * 0.15)
+          ..lineTo(rect.center.dx + rect.width * 0.07, rect.center.dy)
+          ..lineTo(rect.center.dx, rect.center.dy + rect.height * 0.1)
+          ..lineTo(rect.center.dx - rect.width * 0.07, rect.center.dy)
+          ..close();
+        canvas.drawPath(starPath, starPaint);
+      },
+    ),
+  );
 
   static Future<Sprite> speedPickup({required bool boost}) => _memo(
-        boost ? 'speedBoost' : 'speedSlow',
-        () => _circleSprite(
-          diameter: 150,
-          gradient: boost
-              ? const [Color(0xFF34D399), Color(0xFF10B981)]
-              : const [Color(0xFF60A5FA), Color(0xFF3B82F6)],
-          borderColor: Colors.white.withOpacity(0.85),
-          borderWidth: 5,
-          glowColor: boost ? const Color(0x8034D399) : const Color(0x805DB3FF),
-          glowSigma: 14,
-          highlightOpacity: 0.18,
-          decorator: (canvas, rect) {
-            final path = Path();
-            final center = rect.center;
-            if (boost) {
-              path.moveTo(center.dx - rect.width * 0.1, center.dy + rect.height * 0.18);
-              path.lineTo(center.dx - rect.width * 0.1, center.dy - rect.height * 0.18);
-              path.lineTo(center.dx + rect.width * 0.2, center.dy);
-              path.close();
-            } else {
-              path.addRRect(
-                RRect.fromRectAndRadius(
-                  Rect.fromCenter(
-                    center: center,
-                    width: rect.width * 0.55,
-                    height: rect.height * 0.28,
-                  ),
-                  Radius.circular(rect.width * 0.14),
-                ),
-              );
-            }
-            final arrowPaint = Paint()
-              ..color = Colors.white.withOpacity(0.85)
-              ..maskFilter = const ui.MaskFilter.blur(ui.BlurStyle.normal, 6);
-            canvas.drawPath(path, arrowPaint);
-          },
-        ),
-      );
+    boost ? 'speedBoost' : 'speedSlow',
+    () => _circleSprite(
+      diameter: 150,
+      gradient: boost
+          ? const [Color(0xFF34D399), Color(0xFF10B981)]
+          : const [Color(0xFF60A5FA), Color(0xFF3B82F6)],
+      borderColor: Colors.white.withOpacity(0.85),
+      borderWidth: 5,
+      glowColor: boost ? const Color(0x8034D399) : const Color(0x805DB3FF),
+      glowSigma: 14,
+      highlightOpacity: 0.18,
+      decorator: (canvas, rect) {
+        final path = Path();
+        final center = rect.center;
+        if (boost) {
+          path.moveTo(
+            center.dx - rect.width * 0.1,
+            center.dy + rect.height * 0.18,
+          );
+          path.lineTo(
+            center.dx - rect.width * 0.1,
+            center.dy - rect.height * 0.18,
+          );
+          path.lineTo(center.dx + rect.width * 0.2, center.dy);
+          path.close();
+        } else {
+          path.addRRect(
+            RRect.fromRectAndRadius(
+              Rect.fromCenter(
+                center: center,
+                width: rect.width * 0.55,
+                height: rect.height * 0.28,
+              ),
+              Radius.circular(rect.width * 0.14),
+            ),
+          );
+        }
+        final arrowPaint = Paint()
+          ..color = Colors.white.withOpacity(0.85)
+          ..maskFilter = const ui.MaskFilter.blur(ui.BlurStyle.normal, 6);
+        canvas.drawPath(path, arrowPaint);
+      },
+    ),
+  );
 
   static Future<Sprite> _memo(String key, Future<Sprite> Function() builder) {
     return _cache.putIfAbsent(key, builder);
@@ -137,7 +144,10 @@ class RunnerSpriteFactory {
         ..color = glowColor
         ..maskFilter = ui.MaskFilter.blur(ui.BlurStyle.normal, glowSigma);
       canvas.drawRRect(
-        RRect.fromRectAndRadius(rect.inflate(12), Radius.circular(cornerRadius + 12)),
+        RRect.fromRectAndRadius(
+          rect.inflate(12),
+          Radius.circular(cornerRadius + 12),
+        ),
         glowPaint,
       );
     }
@@ -147,12 +157,17 @@ class RunnerSpriteFactory {
     canvas.drawRRect(rrect, fillPaint);
 
     if (stripeOpacity > 0) {
-      final stripePaint = Paint()..color = Colors.white.withOpacity(stripeOpacity);
+      final stripePaint = Paint()
+        ..color = Colors.white.withOpacity(stripeOpacity);
       const double stripeWidth = 22.0;
       canvas.save();
       canvas.translate(-height * 0.4, 0);
       canvas.rotate(-math.pi / 8);
-      for (double x = -height; x < width + height * 1.5; x += stripeWidth * 2.6) {
+      for (
+        double x = -height;
+        x < width + height * 1.5;
+        x += stripeWidth * 2.6
+      ) {
         canvas.drawRect(
           Rect.fromLTWH(x, -height, stripeWidth, height * 3),
           stripePaint,
@@ -178,7 +193,10 @@ class RunnerSpriteFactory {
           ],
         );
       canvas.drawRRect(
-        RRect.fromRectAndRadius(highlightRect, Radius.circular(cornerRadius * 0.6)),
+        RRect.fromRectAndRadius(
+          highlightRect,
+          Radius.circular(cornerRadius * 0.6),
+        ),
         highlightPaint,
       );
     }
@@ -223,11 +241,7 @@ class RunnerSpriteFactory {
     }
 
     final fillPaint = Paint()
-      ..shader = ui.Gradient.radial(
-        center,
-        radius,
-        gradient,
-      );
+      ..shader = ui.Gradient.radial(center, radius, gradient);
     canvas.drawCircle(center, radius, fillPaint);
 
     if (highlightOpacity > 0) {
@@ -268,6 +282,8 @@ class RunnerGame extends FlameGame {
   late final CameraComponent _camera;
   late final World _world;
   late final PlayerRunner _player;
+  late final PositionComponent _fxBackLayer;
+  late final PositionComponent _fxFrontLayer;
   final math.Random _rng = math.Random();
   List<double> lanePositions = const [];
   double playerStartY = 0;
@@ -289,6 +305,10 @@ class RunnerGame extends FlameGame {
   double _speedModifier = 0;
   double _speedModifierTimer = 0;
   final ProgressService _progress = ProgressService.instance;
+  final ValueNotifier<List<AchievementUnlockEvent>> unlockQueueNotifier =
+      ValueNotifier<List<AchievementUnlockEvent>>([]);
+  StreamSubscription<UnlockLevel>? _unlockSubscription;
+  int _unlockEventCounter = 0;
 
   @override
   Color backgroundColor() => const Color(0xFF0D0B1E);
@@ -312,8 +332,15 @@ class RunnerGame extends FlameGame {
     _player = PlayerRunner()..priority = 20;
     _world.add(_player);
 
+    _fxBackLayer = PositionComponent()..priority = 8;
+    _fxFrontLayer = PositionComponent()..priority = 30;
+    _world.addAll([_fxBackLayer, _fxFrontLayer]);
+
     _applyViewportSizing(Vector2(worldWidth, worldHeight));
     _recalculateLayout(initial: true);
+
+    await GameAudioService.instance.ensureInitialized();
+    _unlockSubscription = _progress.unlockStream.listen(_handleUnlock);
 
     // Seed a few obstacles starting off-screen above
     _seedInitialEntities();
@@ -383,6 +410,7 @@ class RunnerGame extends FlameGame {
 
     for (final obstacle in _world.children.query<ObstacleRunner>()) {
       if (_componentsOverlap(_player, obstacle, padding: 12)) {
+        emitCollisionBurst(_player.position.clone());
         triggerGameOver();
         break;
       }
@@ -453,13 +481,15 @@ class RunnerGame extends FlameGame {
     speed = 140;
     _speedModifier = 0;
     _speedModifierTimer = 0;
-    _player
-      ..position.y = playerStartY;
+    _player..position.y = playerStartY;
     _player.snapToLane(1, snapInstant: true);
     cameraCenterY = worldHeight / 2;
     _camera.viewfinder.position = Vector2(worldWidth / 2, cameraCenterY);
     _laneLastSpawnTime.clear();
     _lastGlobalSpawnTime = double.negativeInfinity;
+    if (unlockQueueNotifier.value.isNotEmpty) {
+      unlockQueueNotifier.value = [];
+    }
     // Remove all obstacles
     for (final o in _world.children.query<ObstacleRunner>().toList()) {
       o.removeFromParent();
@@ -529,6 +559,9 @@ class RunnerGame extends FlameGame {
   void _applySpeedModifier(double delta, {double duration = 4}) {
     _speedModifier = delta;
     _speedModifierTimer = duration;
+    if (delta.abs() > 1e-2) {
+      emitSpeedAura(boost: delta > 0);
+    }
   }
 
   void _seedInitialEntities() {
@@ -590,21 +623,24 @@ class RunnerGame extends FlameGame {
       if (laneTime != null && (now - laneTime) < _laneSpawnCooldown) {
         return false;
       }
-      if (_lastGlobalSpawnTime.isFinite && (now - _lastGlobalSpawnTime) < _globalSpawnCooldown) {
+      if (_lastGlobalSpawnTime.isFinite &&
+          (now - _lastGlobalSpawnTime) < _globalSpawnCooldown) {
         return false;
       }
     }
     return true;
   }
 
-  void spawnSpeedPickup({required double y, required int laneIndex, required bool isSpeedBoost}) {
+  void spawnSpeedPickup({
+    required double y,
+    required int laneIndex,
+    required bool isSpeedBoost,
+  }) {
     final laneX = lanePositions[laneIndex.clamp(0, lanePositions.length - 1)];
-    final pickup = SpeedPickupRunner(
-      laneIndex: laneIndex,
-      isSpeedBoost: isSpeedBoost,
-    )
-      ..priority = 9
-      ..position = Vector2(laneX, y);
+    final pickup =
+        SpeedPickupRunner(laneIndex: laneIndex, isSpeedBoost: isSpeedBoost)
+          ..priority = 9
+          ..position = Vector2(laneX, y);
     _world.add(pickup);
     _recordSpawn(laneIndex, timeSinceStart);
   }
@@ -641,8 +677,10 @@ class RunnerGame extends FlameGame {
       if (!started || initial) {
         _player.position.y = playerStartY;
       } else {
-        _player.position.y =
-            _player.position.y.clamp(playerStartY * 0.35, clampBottom > 0 ? clampBottom : playerStartY);
+        _player.position.y = _player.position.y.clamp(
+          playerStartY * 0.35,
+          clampBottom > 0 ? clampBottom : playerStartY,
+        );
       }
       _player.syncToLane(snapInstant: true);
     }
@@ -666,6 +704,215 @@ class RunnerGame extends FlameGame {
     _lastGlobalSpawnTime = timestamp;
   }
 
+  void _handleUnlock(UnlockLevel level) {
+    final color = unlockLevelColors[level] ?? const Color(0xFF38BDF8);
+    final event = AchievementUnlockEvent(
+      id: ++_unlockEventCounter,
+      level: level,
+      title: unlockLevelTitles[level] ?? level.name,
+      threshold: unlockThresholds[level] ?? 0,
+      color: color,
+    );
+    final updated = List<AchievementUnlockEvent>.from(unlockQueueNotifier.value)
+      ..add(event);
+    unlockQueueNotifier.value = updated;
+    emitUnlockCelebration(color);
+    GameAudioService.instance.play(GameSfx.unlock, volume: 0.8);
+  }
+
+  void dismissAchievementToast(int id) {
+    final current = unlockQueueNotifier.value;
+    if (current.isEmpty) return;
+    final updated = current
+        .where((event) => event.id != id)
+        .toList(growable: false);
+    if (updated.length != current.length) {
+      unlockQueueNotifier.value = updated;
+    }
+  }
+
+  void _addParticle(
+    Particle particle,
+    Vector2 position, {
+    bool front = true,
+    int priority = 0,
+  }) {
+    if (!_fxFrontLayer.isMounted || !_fxBackLayer.isMounted) {
+      return;
+    }
+    final targetLayer = front ? _fxFrontLayer : _fxBackLayer;
+    final fx = ParticleSystemComponent(particle: particle)
+      ..position = position.clone()
+      ..priority = priority;
+    targetLayer.add(fx);
+  }
+
+  void emitCoinCollect(Vector2 position) {
+    final particle = Particle.generate(
+      count: 18,
+      lifespan: 0.6,
+      generator: (_) {
+        final angle = _rng.nextDouble() * math.pi * 2;
+        final speedMagnitude = 90 + _rng.nextDouble() * 110;
+        final direction = Vector2(math.cos(angle), math.sin(angle));
+        final paint = Paint()
+          ..color = Color.lerp(
+            const Color(0xFFFFF59D),
+            const Color(0xFFF59E0B),
+            _rng.nextDouble(),
+          )!
+          ..style = PaintingStyle.fill;
+        return AcceleratedParticle(
+          speed: direction * speedMagnitude,
+          acceleration: Vector2(0, 220),
+          child: CircleParticle(
+            radius: 3.5 + _rng.nextDouble() * 3.5,
+            paint: paint,
+          ),
+        );
+      },
+    );
+    _addParticle(particle, position, front: true, priority: 2);
+  }
+
+  void emitSpeedPickup(Vector2 position, {required bool isSpeedBoost}) {
+    final baseColor = isSpeedBoost
+        ? const Color(0xFF34D399)
+        : const Color(0xFF3B82F6);
+    final particle = Particle.generate(
+      count: 20,
+      lifespan: 0.75,
+      generator: (_) {
+        final angle = _rng.nextDouble() * math.pi * 2;
+        final distance = 70 + _rng.nextDouble() * 40;
+        final direction = Vector2(math.cos(angle), math.sin(angle));
+        final paint = Paint()
+          ..color = baseColor.withOpacity(0.55 + _rng.nextDouble() * 0.35)
+          ..maskFilter = const ui.MaskFilter.blur(ui.BlurStyle.normal, 2);
+        return AcceleratedParticle(
+          position: direction * 6,
+          speed: direction * distance,
+          acceleration: direction * -40,
+          child: CircleParticle(
+            radius: 3 + _rng.nextDouble() * 2.2,
+            paint: paint,
+          ),
+        );
+      },
+    );
+    _addParticle(particle, position, front: true, priority: 3);
+  }
+
+  void emitSpeedAura({required bool boost}) {
+    if (!_player.isMounted) {
+      return;
+    }
+    final baseColor = boost ? const Color(0xFF22C55E) : const Color(0xFF60A5FA);
+    final particle = Particle.generate(
+      count: 28,
+      lifespan: 0.5,
+      generator: (_) {
+        final theta = _rng.nextDouble() * math.pi * 2;
+        final direction = Vector2(math.cos(theta), math.sin(theta));
+        final paint = Paint()
+          ..color = baseColor.withOpacity(0.35 + _rng.nextDouble() * 0.4)
+          ..maskFilter = const ui.MaskFilter.blur(ui.BlurStyle.normal, 4);
+        return AcceleratedParticle(
+          position: direction * 12,
+          speed:
+              direction * (120 + _rng.nextDouble() * 70) * (boost ? 1.1 : 0.9),
+          acceleration: direction * -90,
+          child: CircleParticle(
+            radius: 4 + _rng.nextDouble() * 3,
+            paint: paint,
+          ),
+        );
+      },
+    );
+    _addParticle(particle, _player.position.clone(), front: true, priority: 4);
+  }
+
+  void emitCollisionBurst(Vector2 position) {
+    final particle = Particle.generate(
+      count: 36,
+      lifespan: 0.8,
+      generator: (_) {
+        final angle = _rng.nextDouble() * math.pi * 2;
+        final magnitude = 160 + _rng.nextDouble() * 200;
+        final direction = Vector2(math.cos(angle), math.sin(angle));
+        final palette = [
+          const Color(0xFFFF6B6B),
+          const Color(0xFFF97316),
+          const Color(0xFF38BDF8),
+          Colors.white,
+        ];
+        final paint = Paint()
+          ..color = palette[_rng.nextInt(palette.length)].withOpacity(
+            0.7 + _rng.nextDouble() * 0.25,
+          )
+          ..maskFilter = const ui.MaskFilter.blur(ui.BlurStyle.normal, 3);
+        return AcceleratedParticle(
+          speed: direction * magnitude,
+          acceleration: direction * -200,
+          child: CircleParticle(
+            radius: 5 + _rng.nextDouble() * 4,
+            paint: paint,
+          ),
+        );
+      },
+    );
+    _addParticle(particle, position, front: true, priority: 5);
+    GameAudioService.instance.play(GameSfx.collision, volume: 0.7);
+  }
+
+  void emitPlayerTrail(Vector2 position) {
+    final particle = Particle.generate(
+      count: 2,
+      lifespan: 0.45,
+      generator: (_) {
+        final horizontalJitter = (_rng.nextDouble() - 0.5) * 28;
+        final paint = Paint()
+          ..color = const Color(0x5538BDF8)
+          ..maskFilter = const ui.MaskFilter.blur(ui.BlurStyle.normal, 6);
+        return AcceleratedParticle(
+          speed: Vector2(horizontalJitter, 90 + speed * 0.15),
+          acceleration: Vector2(0, 210),
+          child: CircleParticle(
+            radius: 6 + _rng.nextDouble() * 5,
+            paint: paint,
+          ),
+        );
+      },
+    );
+    _addParticle(particle, position, front: false, priority: -2);
+  }
+
+  void emitUnlockCelebration(Color accent) {
+    final origin = _player.position.clone();
+    final particle = Particle.generate(
+      count: 44,
+      lifespan: 1.1,
+      generator: (_) {
+        final angle = _rng.nextDouble() * math.pi * 2;
+        final magnitude = 180 + _rng.nextDouble() * 140;
+        final direction = Vector2(math.cos(angle), math.sin(angle));
+        final paint = Paint()
+          ..color = accent.withOpacity(0.45 + _rng.nextDouble() * 0.4)
+          ..maskFilter = const ui.MaskFilter.blur(ui.BlurStyle.normal, 4);
+        return AcceleratedParticle(
+          position: direction * 12,
+          speed: direction * magnitude,
+          acceleration: direction * -220,
+          child: CircleParticle(
+            radius: 5 + _rng.nextDouble() * 4.5,
+            paint: paint,
+          ),
+        );
+      },
+    );
+    _addParticle(particle, origin, front: true, priority: 6);
+  }
+
   bool _componentsOverlap(
     PositionComponent a,
     PositionComponent b, {
@@ -681,6 +928,28 @@ class RunnerGame extends FlameGame {
     final limitY = ((ay + by) * 0.5) - padding;
     return dx < limitX && dy < limitY;
   }
+
+  @override
+  void onRemove() {
+    _unlockSubscription?.cancel();
+    super.onRemove();
+  }
+}
+
+class AchievementUnlockEvent {
+  AchievementUnlockEvent({
+    required this.id,
+    required this.level,
+    required this.title,
+    required this.threshold,
+    required this.color,
+  });
+
+  final int id;
+  final UnlockLevel level;
+  final String title;
+  final int threshold;
+  final Color color;
 }
 
 class BackgroundRoad extends PositionComponent with HasGameRef<RunnerGame> {
@@ -716,11 +985,7 @@ class BackgroundRoad extends PositionComponent with HasGameRef<RunnerGame> {
       ..shader = ui.Gradient.linear(
         rect.topCenter,
         rect.bottomCenter,
-        const [
-          Color(0xFF080B1A),
-          Color(0xFF10172A),
-          Color(0xFF0B1120),
-        ],
+        const [Color(0xFF080B1A), Color(0xFF10172A), Color(0xFF0B1120)],
         const [0.0, 0.55, 1.0],
       );
     canvas.drawRect(rect, gradientPaint);
@@ -729,12 +994,12 @@ class BackgroundRoad extends PositionComponent with HasGameRef<RunnerGame> {
       ..shader = ui.Gradient.linear(
         Offset(0, roadSize.y * 0.25),
         Offset(0, roadSize.y * 0.45),
-        [
-          const Color(0x4434D399),
-          Colors.transparent,
-        ],
+        [const Color(0x4434D399), Colors.transparent],
       );
-    canvas.drawRect(Rect.fromLTWH(0, roadSize.y * 0.2, roadSize.x, roadSize.y * 0.3), horizonPaint);
+    canvas.drawRect(
+      Rect.fromLTWH(0, roadSize.y * 0.2, roadSize.x, roadSize.y * 0.3),
+      horizonPaint,
+    );
 
     final skylinePaint = Paint()..color = const Color(0x2210B981);
     final skylineGlow = Paint()
@@ -742,7 +1007,9 @@ class BackgroundRoad extends PositionComponent with HasGameRef<RunnerGame> {
       ..maskFilter = const ui.MaskFilter.blur(ui.BlurStyle.normal, 18);
 
     for (double x = -80; x < roadSize.x + 80; x += 90) {
-      final height = roadSize.y * 0.18 + (math.sin((x + _offset) * 0.01) + 1) * roadSize.y * 0.08;
+      final height =
+          roadSize.y * 0.18 +
+          (math.sin((x + _offset) * 0.01) + 1) * roadSize.y * 0.08;
       final buildingRect = Rect.fromLTWH(
         x,
         roadSize.y * 0.38 - height,
@@ -750,7 +1017,11 @@ class BackgroundRoad extends PositionComponent with HasGameRef<RunnerGame> {
         height,
       );
       canvas.drawRRect(
-        RRect.fromRectAndCorners(buildingRect, topLeft: const Radius.circular(18), topRight: const Radius.circular(18)),
+        RRect.fromRectAndCorners(
+          buildingRect,
+          topLeft: const Radius.circular(18),
+          topRight: const Radius.circular(18),
+        ),
         skylineGlow,
       );
       canvas.drawRRect(
@@ -767,7 +1038,10 @@ class BackgroundRoad extends PositionComponent with HasGameRef<RunnerGame> {
     final dividerPaint = Paint()
       ..color = const Color(0xFF172554)
       ..style = PaintingStyle.fill;
-    canvas.drawRect(Rect.fromLTWH(0, roadSize.y * 0.32, 14, roadSize.y * 0.68), dividerPaint);
+    canvas.drawRect(
+      Rect.fromLTWH(0, roadSize.y * 0.32, 14, roadSize.y * 0.68),
+      dividerPaint,
+    );
     canvas.drawRect(
       Rect.fromLTWH(roadSize.x - 14, roadSize.y * 0.32, 14, roadSize.y * 0.68),
       dividerPaint,
@@ -776,7 +1050,10 @@ class BackgroundRoad extends PositionComponent with HasGameRef<RunnerGame> {
     final edgeGlow = Paint()
       ..color = const Color(0x5538BDF8)
       ..maskFilter = const ui.MaskFilter.blur(ui.BlurStyle.normal, 12);
-    canvas.drawRect(Rect.fromLTWH(0, roadSize.y * 0.32, 28, roadSize.y * 0.68), edgeGlow);
+    canvas.drawRect(
+      Rect.fromLTWH(0, roadSize.y * 0.32, 28, roadSize.y * 0.68),
+      edgeGlow,
+    );
     canvas.drawRect(
       Rect.fromLTWH(roadSize.x - 28, roadSize.y * 0.32, 28, roadSize.y * 0.68),
       edgeGlow,
@@ -802,16 +1079,14 @@ class BackgroundRoad extends PositionComponent with HasGameRef<RunnerGame> {
       ..shader = ui.Gradient.radial(
         Offset(roadSize.x / 2, roadSize.y * 0.6),
         roadSize.y,
-        [
-          Colors.transparent,
-          const Color(0x220EA5E9),
-        ],
+        [Colors.transparent, const Color(0x220EA5E9)],
       );
     canvas.drawRect(rect, ambientOverlay);
   }
 }
 
-abstract class LaneAttachable extends SpriteComponent with HasGameRef<RunnerGame> {
+abstract class LaneAttachable extends SpriteComponent
+    with HasGameRef<RunnerGame> {
   LaneAttachable({
     required this.laneIndex,
     required Vector2 size,
@@ -840,6 +1115,7 @@ abstract class LaneAttachable extends SpriteComponent with HasGameRef<RunnerGame
 class PlayerRunner extends LaneAttachable {
   double _targetX = 0;
   final double _laneLerpSpeed = 12;
+  late final TimerComponent _trailTimer;
 
   PlayerRunner() : super(laneIndex: 1, size: Vector2(64, 72));
 
@@ -860,6 +1136,18 @@ class PlayerRunner extends LaneAttachable {
         ),
       ),
     );
+    _trailTimer = TimerComponent(
+      period: 0.08,
+      repeat: true,
+      onTick: () {
+        if (!gameRef.started || gameRef.gameOver) {
+          return;
+        }
+        final emissionPoint = Vector2(position.x, position.y + size.y * 0.42);
+        gameRef.emitPlayerTrail(emissionPoint);
+      },
+    );
+    add(_trailTimer);
   }
 
   void changeLane(int delta) {
@@ -901,7 +1189,8 @@ class PlayerRunner extends LaneAttachable {
 }
 
 class ObstacleRunner extends LaneAttachable {
-  ObstacleRunner({required int laneIndex}) : super(laneIndex: laneIndex, size: Vector2.all(64));
+  ObstacleRunner({required int laneIndex})
+    : super(laneIndex: laneIndex, size: Vector2.all(64));
 
   @override
   Future<void> onLoad() async {
@@ -921,7 +1210,8 @@ class ObstacleRunner extends LaneAttachable {
 }
 
 class CoinRunner extends LaneAttachable {
-  CoinRunner({required int laneIndex}) : super(laneIndex: laneIndex, size: Vector2.all(52));
+  CoinRunner({required int laneIndex})
+    : super(laneIndex: laneIndex, size: Vector2.all(52));
 
   @override
   Future<void> onLoad() async {
@@ -950,6 +1240,8 @@ class CoinRunner extends LaneAttachable {
   }
 
   void collect() {
+    gameRef.emitCoinCollect(position.clone());
+    GameAudioService.instance.play(GameSfx.coin, volume: 0.75);
     removeFromParent();
   }
 }
@@ -957,10 +1249,8 @@ class CoinRunner extends LaneAttachable {
 class SpeedPickupRunner extends LaneAttachable {
   final bool isSpeedBoost;
 
-  SpeedPickupRunner({
-    required int laneIndex,
-    required this.isSpeedBoost,
-  }) : super(laneIndex: laneIndex, size: Vector2.all(56));
+  SpeedPickupRunner({required int laneIndex, required this.isSpeedBoost})
+    : super(laneIndex: laneIndex, size: Vector2.all(56));
 
   @override
   Future<void> onLoad() async {
@@ -990,7 +1280,11 @@ class SpeedPickupRunner extends LaneAttachable {
   }
 
   void consume() {
+    gameRef.emitSpeedPickup(position.clone(), isSpeedBoost: isSpeedBoost);
+    GameAudioService.instance.play(
+      isSpeedBoost ? GameSfx.pickupBoost : GameSfx.pickupSlow,
+      volume: isSpeedBoost ? 0.85 : 0.65,
+    );
     removeFromParent();
   }
 }
-

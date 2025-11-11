@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:collection';
 
 import 'package:flutter/foundation.dart';
@@ -13,10 +14,13 @@ class ProgressService {
   final Map<UnlockLevel, bool> _unlocks = {
     for (final level in UnlockLevel.values) level: false,
   };
+  final StreamController<UnlockLevel> _unlockController =
+      StreamController<UnlockLevel>.broadcast();
 
   int get highScore => _highScore;
   UnmodifiableMapView<UnlockLevel, bool> get currentUnlocks =>
       UnmodifiableMapView(_unlocks);
+  Stream<UnlockLevel> get unlockStream => _unlockController.stream;
 
   void updateScore(int score) {
     if (score > _highScore) {
@@ -28,7 +32,14 @@ class ProgressService {
 
   void _recomputeUnlocks() {
     for (final entry in unlockThresholds.entries) {
-      _unlocks[entry.key] = _highScore >= entry.value;
+      final level = entry.key;
+      final threshold = entry.value;
+      final wasUnlocked = _unlocks[level] ?? false;
+      final isUnlocked = _highScore >= threshold;
+      _unlocks[level] = isUnlocked;
+      if (isUnlocked && !wasUnlocked) {
+        _unlockController.add(level);
+      }
     }
   }
 

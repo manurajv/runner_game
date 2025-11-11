@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
+import '../constants/unlock_metadata.dart';
 import '../constants/unlock_thresholds.dart';
 import '../models/resume_section.dart';
 import '../services/progress_service.dart';
@@ -100,7 +101,7 @@ class _ResumeScreenState extends State<ResumeScreen> {
                   const SizedBox(height: 28),
                   ...UnlockLevel.values.map(
                     (level) => _sectionTile(
-                      _levelTitle[level]!,
+                      unlockLevelTitles[level]!,
                       level,
                       unlocks[level] == true,
                     ),
@@ -132,7 +133,7 @@ class _ResumeScreenState extends State<ResumeScreen> {
   Widget _sectionTile(String title, UnlockLevel level, bool unlocked) {
     final threshold = unlockThresholds[level]!;
     final section = _sections[level];
-    final accent = _levelColors[level]!;
+    final accent = unlockLevelColors[level]!;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
@@ -275,8 +276,10 @@ class _ResumeScreenState extends State<ResumeScreen> {
     showModalBottomSheet(
       context: context,
       showDragHandle: true,
-      builder: (context) =>
-          ResumeSectionSheet(section: section, accent: _levelColors[level]!),
+      builder: (context) => ResumeSectionSheet(
+        section: section,
+        accent: unlockLevelColors[level]!,
+      ),
     );
   }
 }
@@ -581,21 +584,3 @@ class _SummaryStat extends StatelessWidget {
     );
   }
 }
-
-const Map<UnlockLevel, String> _levelTitle = {
-  UnlockLevel.profile: 'Profile',
-  UnlockLevel.skills: 'Skills',
-  UnlockLevel.education: 'Education',
-  UnlockLevel.experience: 'Experience',
-  UnlockLevel.projects: 'Projects',
-  UnlockLevel.achievements: 'Achievements',
-};
-
-const Map<UnlockLevel, Color> _levelColors = {
-  UnlockLevel.profile: Color(0xFF7DDFF8),
-  UnlockLevel.skills: Color(0xFF9F7BFF),
-  UnlockLevel.education: Color(0xFF67E8A3),
-  UnlockLevel.experience: Color(0xFFFF8FA3),
-  UnlockLevel.projects: Color(0xFFFFD166),
-  UnlockLevel.achievements: Color(0xFF6EE7F9),
-};
