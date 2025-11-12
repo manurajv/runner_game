@@ -1,6 +1,7 @@
 import 'package:flame/game.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'game/runner_game.dart';
 import 'ui/runner_overlays.dart';
@@ -50,21 +51,24 @@ class MyApp extends StatelessWidget {
         '/': (context) => const MainMenuScreen(),
         '/play': (context) {
           final game = RunnerGame();
-          return GameWidget(
+          return _KeyboardGameWrapper(
             game: game,
-            overlayBuilderMap: {
-              'runner_start': (context, game) =>
-                  RunnerStartOverlay(game: game as RunnerGame),
-              'runner_hud': (context, game) =>
-                  RunnerHudOverlay(game: game as RunnerGame),
-              'runner_gameover': (context, game) =>
-                  RunnerGameOverOverlay(game: game as RunnerGame),
-              'runner_pause': (context, game) =>
-                  RunnerPauseOverlay(game: game as RunnerGame),
-              'runner_resume': (context, game) =>
-                  RunnerResumeOverlay(game: game as RunnerGame),
-            },
-            initialActiveOverlays: const ['runner_start'],
+            child: GameWidget(
+              game: game,
+              overlayBuilderMap: {
+                'runner_start': (context, game) =>
+                    RunnerStartOverlay(game: game as RunnerGame),
+                'runner_hud': (context, game) =>
+                    RunnerHudOverlay(game: game as RunnerGame),
+                'runner_gameover': (context, game) =>
+                    RunnerGameOverOverlay(game: game as RunnerGame),
+                'runner_pause': (context, game) =>
+                    RunnerPauseOverlay(game: game as RunnerGame),
+                'runner_resume': (context, game) =>
+                    RunnerResumeOverlay(game: game as RunnerGame),
+              },
+              initialActiveOverlays: const ['runner_start'],
+            ),
           );
         },
         '/resume': (context) => const ResumeScreen(),
@@ -75,3 +79,82 @@ class MyApp extends StatelessWidget {
 }
 
 // Old counter app removed; routes now point to main menu and game
+
+// Intent classes for keyboard shortcuts
+class MoveLeftIntent extends Intent {
+  const MoveLeftIntent();
+}
+
+class MoveRightIntent extends Intent {
+  const MoveRightIntent();
+}
+
+// Wrapper widget to handle keyboard input for the game
+class _KeyboardGameWrapper extends StatefulWidget {
+  final RunnerGame game;
+  final Widget child;
+
+  const _KeyboardGameWrapper({
+    required this.game,
+    required this.child,
+  });
+
+  @override
+  State<_KeyboardGameWrapper> createState() => _KeyboardGameWrapperState();
+}
+
+class _KeyboardGameWrapperState extends State<_KeyboardGameWrapper> {
+  final FocusNode _focusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    // Request focus after the widget is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _focusNode.requestFocus();
+    });
+  }
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Shortcuts(
+      shortcuts: <LogicalKeySet, Intent>{
+        LogicalKeySet(LogicalKeyboardKey.arrowLeft): const MoveLeftIntent(),
+        LogicalKeySet(LogicalKeyboardKey.arrowRight): const MoveRightIntent(),
+      },
+      child: Actions(
+        actions: <Type, Action<Intent>>{
+          MoveLeftIntent: CallbackAction<MoveLeftIntent>(
+            onInvoke: (intent) {
+              widget.game.moveLeft();
+              return null;
+            },
+          ),
+          MoveRightIntent: CallbackAction<MoveRightIntent>(
+            onInvoke: (intent) {
+              widget.game.moveRight();
+              return null;
+            },
+          ),
+        },
+        child: Focus(
+          focusNode: _focusNode,
+          autofocus: true,
+          child: GestureDetector(
+            onTap: () {
+              // Re-request focus when user taps on the game
+              _focusNode.requestFocus();
+            },
+            child: widget.child,
+          ),
+        ),
+      ),
+    );
+  }
+}

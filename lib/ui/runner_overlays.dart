@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../game/runner_game.dart';
 import 'app_theme.dart';
@@ -105,17 +106,32 @@ class _RunnerHudOverlayState extends State<RunnerHudOverlay> {
     return Stack(
       children: [
         Positioned.fill(
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onHorizontalDragEnd: (d) {
-              final vx = d.primaryVelocity ?? 0;
-              if (vx < -200) {
-                game.moveLeft();
-              } else if (vx > 200) {
-                game.moveRight();
+          child: Focus(
+            autofocus: true,
+            onKeyEvent: (node, event) {
+              if (event is KeyDownEvent) {
+                if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+                  game.moveLeft();
+                  return KeyEventResult.handled;
+                } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+                  game.moveRight();
+                  return KeyEventResult.handled;
+                }
               }
+              return KeyEventResult.ignored;
             },
-            onTapUp: (_) => game.pauseGame(),
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onHorizontalDragEnd: (d) {
+                final vx = d.primaryVelocity ?? 0;
+                if (vx < -200) {
+                  game.moveLeft();
+                } else if (vx > 200) {
+                  game.moveRight();
+                }
+              },
+              onTapUp: (_) => game.pauseGame(),
+            ),
           ),
         ),
         SafeArea(
